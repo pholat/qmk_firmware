@@ -324,6 +324,22 @@ static void init_cols(void) {
     }
 }
 
+#ifndef NON_STANDARD_ROW
+union RR {
+    uint8_t allval;
+    struct {
+        uint8_t v0 : 1;
+        uint8_t v1 : 1;
+        uint8_t v2 : 1;
+        uint8_t v3 : 1;
+        uint8_t v4 : 1;
+        uint8_t v5 : 1;
+        uint8_t v6 : 1;
+        uint8_t v7 : 1;
+    } bits;
+};
+#endif
+
 static bool read_cols_on_row(matrix_row_t current_matrix[], uint8_t current_row) {
     // Store last value of row prior to reading
     matrix_row_t last_row_value = current_matrix[current_row];
@@ -341,7 +357,33 @@ static bool read_cols_on_row(matrix_row_t current_matrix[], uint8_t current_row)
         expander_status = i2c_write(EXPANDER_COL_REGISTER);    if (expander_status) goto out;
         expander_status = i2c_start(I2C_ADDR_READ);            if (expander_status) goto out;
 
+#ifndef NON_STANDARD_ROW
         current_matrix[current_row] |= (~i2c_readNak()) & expander_input_pin_mask;
+#else
+        static uint8_t oldvals[MATRIX_ROWS];
+        uint8_t vals = (~i2c_readNak()) ;
+        if ( vals != oldvals[current_row] ) {
+        uprintf("r %d c: %d %d %d %d %d %d \n",
+                current_row,
+                // (vals & (1<<0)) > 0,
+                (vals & (1<<1)) > 0,
+                (vals & (1<<2)) > 0,
+                (vals & (1<<3)) > 0,
+                (vals & (1<<4)) > 0,
+                (vals & (1<<5)) > 0,
+                (vals & (1<<6)) > 0
+                );
+            oldvals[current_row] = vals;
+        }
+        union RR rr;
+        rr.allval = vals & expander_input_pin_mask;
+        current_matrix[current_row] |= rr.bits.v1 << 5;
+        current_matrix[current_row] |= rr.bits.v2 << 4;
+        current_matrix[current_row] |= rr.bits.v3 << 3;
+        current_matrix[current_row] |= rr.bits.v4 << 2;
+        current_matrix[current_row] |= rr.bits.v5 << 1;
+        current_matrix[current_row] |= rr.bits.v6 << 0;
+#endif
 
         out:
             i2c_stop();

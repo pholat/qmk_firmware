@@ -9,7 +9,9 @@ MCU = atmega32u4
 #   QMK DFU      qmk-dfu
 #   ATmega32A    bootloadHID
 #   ATmega328P   USBasp
-BOOTLOADER = halfkay
+
+BOOTLOADER = halfkay    # teensy
+# BOOTLOADER = caterina # pro micro
 
 # Build Options
 #   comment out to disable the options.
@@ -29,6 +31,8 @@ SLEEP_LED_ENABLE        = no
 API_SYSEX_ENABLE        = no
 RGBLIGHT_ENABLE         = no
 
-# project specific files
-SRC = twimaster.c \
-	  matrix.c
+# project specific files, add board_init.c to use UART for console output
+SRC = twimaster.c matrix.c # board_init.c
+
+# add uart.c for UART output:
+# QUANTUM_LIB_SRC += uart.c
